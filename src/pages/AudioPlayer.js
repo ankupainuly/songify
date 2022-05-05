@@ -141,7 +141,7 @@ export default class AudioPlayer extends Component {
         return (
             <div >
                 
-                <div className="fixed-bottom navbar-light bg-light">
+                <div className="fixed-bottom navbar-light bg-light" style={{justifySelf: "flex-end"}}>
                 
                 <div className="card  bottom-player" >
                     <div className="row g-0">

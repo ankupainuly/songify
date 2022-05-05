@@ -73,7 +73,9 @@ def find_recommendations(songs,id):
     print("COSINE SIM MODEL EXECUTING")
     viz_songs=songs.drop(columns=['id', 'name', 'artists'])
     song_vec=find_songVector(viz_songs,songs,id)
+    # print(song_vec)
     sim_viz_songs=viz_songs[viz_songs.cat==song_vec.cat.values[0]]
+    # print(sim_viz_songs)
     sim_viz_songs.fillna(value = 0,inplace = True)
     sim=cosine_similarity(sim_viz_songs,song_vec)
     scores=list(enumerate(sim))
@@ -93,6 +95,8 @@ def getRecommendations(songs,songid):
     # recommender = SpotifyRecommender(songs)
     
     # recc=recommender.get_recommendations(songid, 5)
+    # print("at line 98 - " + songid)
+    # print(songs.loc[songs['id']==songid].cat)
     recc=find_recommendations(songs,songid)
     return recc
 
