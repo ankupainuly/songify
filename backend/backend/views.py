@@ -130,7 +130,7 @@ def make_user_user_dataset(request,slug):
     print("COLLAB RECCOMMENDED SONGS")
     # recc_songs_df.set_index('name')
     recc_songs_df.reset_index(inplace=True)
-    print(recc_songs_df)
+    print(recc_songs_df[0:6]['name'])
     return HttpResponse(recc_songs_df['id'].to_json())
 
 
@@ -152,12 +152,13 @@ def fetchUserSongs(request,slug):
         Songs=preprocessData(songs)
         likedSongs=pd.DataFrame({})
         # print(docs[slug])
+        print("COSINE SIM MODEL EXECUTING")
         for key,value in docs[slug]['likedSongs'].items():
             songid=value['songId']
             df=getRecommendations(Songs,songid)
             likedSongs=likedSongs.append(df,ignore_index = True)
 
-        # print(likedSongs)
+        print(likedSongs[0:12]['name'])
         return HttpResponse(likedSongs['id'].to_json())
 
 @csrf_exempt
