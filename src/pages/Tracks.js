@@ -8,6 +8,7 @@ import ReactLoading from 'react-loading';
 import AudioPlayer from './AudioPlayer';
 import { auth, db, } from "../services/firebase";
 import Cookies from 'universal-cookie';
+import { useHistory } from "react-router-dom";
 
 class Tracks extends Component {
     constructor(props)
@@ -99,12 +100,17 @@ class Tracks extends Component {
 
     async fetchRecommendedSongs(cookies,id)
     {
+        var {history}=this.props;
         var url
-        if(id === "CONTENT")
-            url="http://localhost:8000/getRecommendations/content/"
+        console.log("ID IS "+ id)
+        if(id === "CONTENT-COSINE")
+            url="http://localhost:8000/getRecommendations/content/cos/"
+        else if(id === "CONTENT-MAN")
+            url="http://localhost:8000/getRecommendations/content/man/"
         else
             url="http://localhost:8000/getRecommendations/collab/"
         
+        console.log("URL IS"+url)
         try {
             await axios({
                 url: url+auth().currentUser.uid,
@@ -122,18 +128,19 @@ class Tracks extends Component {
  
               }).catch(function(error) {
                   console.log(error)
-                  alert("Couldn't find "+id+" playlist...")
+                  alert("Couldn't Generate Recommendations, kindly like some songs first.")
+                  history.push("/")
               });
               
           } catch (error) {
             console.log(error);
           }
     }
-
+    
     async fetchFromSpotify(cookies,rec_songs)
     {
         for(var id in rec_songs) {
-            //   console.log(id)
+            console.log(id)
             if(rec_songs[id] === null) continue
             await axios({
                 url: 'https://api.spotify.com/v1/tracks/'+rec_songs[id],
@@ -145,7 +152,7 @@ class Tracks extends Component {
                 },
               }).then(response => {
                   //this.setCategories(response.data.categories.items)
-                  //console.log(response)
+                  
                   if(response.data.preview_url)
                   this.state.rec_tracks.push(response.data)
               }).catch(function(error) {
@@ -172,7 +179,7 @@ class Tracks extends Component {
         const cookies = new Cookies()
         const id = this.props.location.state.id
         
-        if(id === "CONTENT" || id === "COLLAB")        //content based recommendations and collaborative recommendations
+        if(id === "CONTENT-COSINE" ||id === "CONTENT-MAN" || id === "COLLAB")        //content based recommendations and collaborative recommendations
         {
             this.fetchRecommendedSongs(cookies,id)
         }

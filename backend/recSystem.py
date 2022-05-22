@@ -1,5 +1,3 @@
-
-
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -72,29 +70,40 @@ def find_recommendations(songs,id):
     
     print("COSINE SIM MODEL EXECUTING")
     viz_songs=songs.drop(columns=['id', 'name', 'artists'])
+    print("song ID: ")
+    print(id)
     song_vec=find_songVector(viz_songs,songs,id)
+    print(song_vec)
     sim_viz_songs=viz_songs[viz_songs.cat==song_vec.cat.values[0]]
+    print("similar songs are ")
+    print(sim_viz_songs.shape)
     sim_viz_songs.fillna(value = 0,inplace = True)
     sim=cosine_similarity(sim_viz_songs,song_vec)
     scores=list(enumerate(sim))
     sorted_scores=sorted(scores,key=lambda x:x[1],reverse=True)  #sorts all the songs in the list in reverse order (decreasing order)
     sorted_scores=sorted_scores[1:]                               #skips the first index as it is the same song with highest similarity
-    # print(len(sorted_scores))
+    print(len(sorted_scores))
     # print(scores)
     rec_songs=pd.DataFrame()
-    for i in range(0,5):
+    for i in range(0,min(len(sorted_scores),5)):
         indx=sorted_scores[i][0]
         rec_songs=rec_songs.append(songs.loc[indx])       #adds all song title according to the scores found
     return rec_songs #returns the songs
 
 
-def getRecommendations(songs,songid):
+def getCosineRecommendations(songs,songid):
 
-    # recommender = SpotifyRecommender(songs)
     
-    # recc=recommender.get_recommendations(songid, 5)
     recc=find_recommendations(songs,songid)
+   
+    print(recc)
     return recc
+def getManRecommendations(songs,songid):
 
+    
+    recommender = SpotifyRecommender(songs)
+    recc=recommender.get_recommendations(songid, 5)
+    
+    return recc
   
 

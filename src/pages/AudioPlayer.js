@@ -153,7 +153,7 @@ export default class AudioPlayer extends Component {
                                 <h5 className="card-title"
                                      style={{
                                         height: "20px",
-                                        width: "60px",
+                                        width: "100px",
                                         overflow: "hidden"
                                     }}
                                 >{nowPlaying}</h5>

@@ -19,7 +19,8 @@ from . import views
 
 urlpatterns = [
     path('getTrackFeatures',views.getTrackFeatures,name='getTrackFeatures'),
-    path('getRecommendations/content/<slug:slug>',views.fetchUserSongs),
+    path('getRecommendations/content/cos/<slug:slug>',views.runContentCosineModel),
+    path('getRecommendations/content/man/<slug:slug>',views.runContentManhattanModel),
     path('getRecommendations/collab/<slug:slug>',views.make_user_user_dataset),
     
 ]

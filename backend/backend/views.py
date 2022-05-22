@@ -16,7 +16,7 @@ from spotipy.oauth2 import SpotifyClientCredentials
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 
-from recSystem import getRecommendations,preprocessData
+from recSystem import getCosineRecommendations,getManRecommendations,preprocessData
 # Fetch the service account key JSON file contents
 cred = credentials.Certificate('./secret.json')
 # Initialize the app with a service account, granting admin privileges
@@ -28,9 +28,11 @@ if not firebase_admin._apps:
 
 ref = db.reference('/users')
 docs=ref.get()
+# ref.child("DuOPj9xdsdWZ4N7dW9relppuFtn2").child('likedSongs').delete()
 for key,value in docs.items():
     print(key)
     print("\n")
+    print(value)
 
 currentUser = ""
 
@@ -44,6 +46,56 @@ songs = pd.read_csv("data.csv")
 # songs=songs.drop(['year','release_date'], axis = 1)
 print(songs.columns)
 @csrf_exempt
+def index(request):
+    if request.method == "GET":
+        print("GET REQ INIT")
+        #print(docs)
+        return HttpResponse(json.dumps(docs), content_type="application/json")
+    elif request.method == "POST":
+        val=json.loads(request.body)
+        print("POST requested")
+        print(val['text'])
+        
+        return HttpResponse("POST REQ")
+
+
+def make_user_user_dataset(request,slug):
+    global songs
+    user_user=pd.DataFrame(columns=songs['id'])
+    user_user = user_user.loc[:,~user_user.columns.duplicated()]
+    userId=slug
+    print("RUNNING THE COLLABORATIVE MODEL")
+    for key,value in docs.items():
+        user=pd.DataFrame(columns=songs['id'])
+        user = user.loc[:,~user.columns.duplicated()]
+        user.loc[key,:]=0
+        
+        if('likedSongs' in value):
+            for song in value['likedSongs']:
+                songId=value['likedSongs'][song]['songId']
+                user.loc[key,songId]=1    
+
+        user_user = user_user.loc[~user_user.index.duplicated(keep='first')]
+        user_user= user_user.append(user)
+    user_user.fillna(value = 0,inplace = True)
+    print("Completed SAVING USER USER TABLE")
+    ratedSongs=findRatedItems(user_user,userId)
+    similarUsers=findSimilarUsers(ratedSongs,user_user)
+    similarUsers.drop([userId],axis=0)
+    uSimDf=find_user_user_Similarity(similarUsers,user_user.loc[[userId],:])
+    uSimDf.drop([userId],axis=0)
+    
+    recc_songs=getCollabRecommendation(uSimDf,user_user,ratedSongs) #get collab recommended songs
+    recc_songs_df=pd.DataFrame()
+    for songid in recc_songs.index:
+        recc_songs_df=recc_songs_df.append(songs[(songs.id == songid)])
+    
+    print("COLLAB RECCOMMENDED SONGS")
+    
+    recc_songs_df.reset_index(inplace=True)
+    
+    return HttpResponse(recc_songs_df['id'].to_json())
+
 
 def findRatedItems(df,currUserId):
     df=df.loc[currUserId]
@@ -62,13 +114,12 @@ def findSimilarUsers(songs,df):
 
 def find_user_user_Similarity(similarUsers,currUser):
 
-    # print("SIMILARITY BETWEEN")
     sim_scores=cosine_similarity(currUser,similarUsers)
     df=pd.DataFrame(sim_scores,columns=similarUsers.index)
     df=df.transpose()
 
     df=df.sort_values(by=df.columns[0],ascending=False)
-    # print(df)
+    
     return df
 
 def getCollabRecommendation(uSim,user_user,ratedSongs):
@@ -86,78 +137,39 @@ def getCollabRecommendation(uSim,user_user,ratedSongs):
     return sim_songs
 
 
-def make_user_user_dataset(request,slug):
-    songs= pd.read_csv("data.csv")
-    songs.set_index('id')
-    user_user=pd.DataFrame(columns=songs['id'])
-    user_user = user_user.loc[:,~user_user.columns.duplicated()]
-    userId=slug
-    
-    for key,value in docs.items():
-        user=pd.DataFrame(columns=songs['id'])
-        user = user.loc[:,~user.columns.duplicated()]
-        user.loc[key,:]=0
-        
-        if('likedSongs' in value):
-            for song in value['likedSongs']:
-                songId=value['likedSongs'][song]['songId']
-                user.loc[key,songId]=1    
-
-        user_user = user_user.loc[~user_user.index.duplicated(keep='first')]
-        user_user= user_user.append(user)
-        # print("NEW USER \n")
-    # user_user_trans=user_user.transpose()
-    user_user.fillna(value = 0,inplace = True)
-    # print(user_user.shape)
-    # user_user_trans.to_csv('user_user.csv',header=True, index=True)
-    print("Completed SAVING USER USER TABLE")
-    ratedSongs=findRatedItems(user_user,userId)
-    similarUsers=findSimilarUsers(ratedSongs,user_user)
-    similarUsers.drop([userId],axis=0)
-    # print("SHAPE OF SIM USERS: ")
-    # print(similarUsers.shape)
-    # # print(user_user.loc[['r0B86Bwa6pROwTptgWgKqZMy3uK2'],:].shape)
-    
-    
-    uSimDf=find_user_user_Similarity(similarUsers,user_user.loc[[userId],:])
-    uSimDf.drop([userId],axis=0)
-    #print(uSimDf.index)
-    recc_songs=getCollabRecommendation(uSimDf,user_user,ratedSongs) #get collab recommended songs
-    recc_songs_df=pd.DataFrame()
-    for songid in recc_songs.index:
-        recc_songs_df=recc_songs_df.append(songs[(songs.id == songid)])
-    
-    print("COLLAB RECCOMMENDED SONGS")
-    # recc_songs_df.set_index('name')
-    recc_songs_df.reset_index(inplace=True)
-    # print(recc_songs_df)
-    return HttpResponse(recc_songs_df['id'].to_json())
 
 
-def index(request):
-    if request.method == "GET":
-        print("GET REQ INIT")
-        #print(docs)
-        return HttpResponse(json.dumps(docs), content_type="application/json")
-    elif request.method == "POST":
-        val=json.loads(request.body)
-        print("POST requested")
-        print(val['text'])
-        
-        return HttpResponse("POST REQ")
-
-def fetchUserSongs(request,slug):
-    if request.method == "GET":
+def runContentCosineModel(request,slug):
+        print("RUNNING COSINE CONTENT SIM MODEL")
         global songs
         Songs=preprocessData(songs)
+        songs.to_csv('data.csv',header=True, index=False)
         likedSongs=pd.DataFrame({})
         for key,value in docs[slug]['likedSongs'].items():
             songid=value['songId']
-            df=getRecommendations(Songs,songid)
+            df=getCosineRecommendations(Songs,songid)
             likedSongs=likedSongs.append(df,ignore_index = True)
 
         print(likedSongs)
         return HttpResponse(likedSongs['id'].to_json())
+
+def runContentManhattanModel(request,slug):
+        
+        print("RUNNING MANHATTAN CONTENT SIM MODEL")
+        global songs
+        Songs=preprocessData(songs)
+        songs.to_csv('data.csv',header=True, index=False)
+        likedSongs=pd.DataFrame({})
+        for key,value in docs[slug]['likedSongs'].items():
+            songid=value['songId']
+            df=getManRecommendations(Songs,songid)
+            likedSongs=likedSongs.append(df,ignore_index = True)
+
+        print(likedSongs)
+        return HttpResponse(likedSongs['id'].to_json())
+
+
+       
 
 @csrf_exempt
 def getTrackFeatures(request) :
