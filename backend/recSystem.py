@@ -1,5 +1,3 @@
-
-
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -69,12 +67,15 @@ class SpotifyRecommender():
 
 def find_songVector(viz_songs,songs,id):
         return viz_songs.loc[songs['id']==id]
+
 def find_recommendations(songs,id):
     
     viz_songs=songs.drop(columns=['id', 'name', 'artists'])
     song_vec=find_songVector(viz_songs,songs,id)
-    # print(song_vec)
+    song_vec=song_vec.iloc[0:1,]
+    print(song_vec)
     sim_viz_songs=viz_songs[viz_songs.cat==song_vec.cat.values[0]]
+    print(sim_viz_songs.shape)
     a = pd.DataFrame()
     indexes = []
     for i in viz_songs.index:
@@ -84,6 +85,7 @@ def find_recommendations(songs,id):
 
     sim_viz_songs.fillna(value = 0,inplace = True)
     sim=cosine_similarity(sim_viz_songs,song_vec)
+    print(sim)
     a['sim'] = sim
     a = a.sort_values(by = 'sim', ascending=False)
 
@@ -95,15 +97,18 @@ def find_recommendations(songs,id):
     return rec_songs #returns the songs
 
 
-def getRecommendations(songs,songid):
+def getCosineRecommendations(songs,songid):
 
-    # recommender = SpotifyRecommender(songs)
     
-    # recc=recommender.get_recommendations(songid, 5)
-    # print("at line 98 - " + songid)
-    # print(songs.loc[songs['id']==songid].cat)
     recc=find_recommendations(songs,songid)
     return recc
 
+def getManRecommendations(songs,songid):
+
+    
+    recommender = SpotifyRecommender(songs)
+    recc=recommender.get_recommendations(songid, 5)
+    
+    return recc
   
 
