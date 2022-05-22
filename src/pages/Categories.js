@@ -1,9 +1,12 @@
 import React, { Component } from 'react';
 import axios from 'axios';
 import "../Styles/Categories.css"
+import { db, auth } from '../services/firebase';
+import {TracksMenu} from './Tracks'
 import AudioPlayer from './AudioPlayer';
 import { Link } from "react-router-dom";
 import Cookies from 'universal-cookie';
+import Tracks from './Tracks';
 
 export default class Categories extends Component {
   
@@ -12,12 +15,37 @@ export default class Categories extends Component {
         super(props);
         this.state={
             categories: [],
+            likedSongs: [],
             rec_cat:    ["Mix 1","Mix 2","Mix 3"],
             rec_cat_image:["https://www.onlinelogomaker.com/blog/wp-content/uploads/2017/06/music-logo-design.jpg"]
 
         }
         this.setCategories = this.setCategories.bind(this)
         this.setRecCategories = this.setRecCategories.bind(this)
+        this.togglePlaying = this.togglePlaying.bind(this)
+    }
+
+    togglePlaying(index, playerState)
+    {
+        const {likedSongs}=this.state;
+        
+        const newState={nowPlaying:likedSongs[index].songTitle,
+            playingSongImage:likedSongs[index].songImage,
+            playingSongLink:likedSongs[index].songLink,
+            playingArtist: likedSongs[index].songArtist,
+            isPlaying:true};
+
+        this.setState({
+            nowPlaying:likedSongs[index].songTitle,
+            playingSongImage:likedSongs[index].songImage,
+            playingSongLink:likedSongs[index].songLink,
+            playingArtist: likedSongs[index].artistName,
+            isPlaying:true
+        })
+
+            const cookies= new Cookies();
+            cookies.set("playerState",newState);
+            console.log(index)
     }
 
     setCategories(data) {
@@ -44,7 +72,21 @@ export default class Categories extends Component {
                 //   console.log(this.state.playList)
               }).catch(function(error) {
               });
-         
+
+            db.ref("users")
+            .child(auth().currentUser.uid)
+            .child("likedSongs")
+            // .equalTo("likedSongs")
+            .on("value", (snapshot) => {
+                var temp = []
+                //console.log(snapshot.val())
+              snapshot.forEach(element => {
+                //   console.log(element.val())
+                  temp.push(element.val())
+              }
+              )
+              this.setState({likedSongs: temp});
+            });
           } catch (error) {
             console.log(error);
           }
@@ -53,9 +95,20 @@ export default class Categories extends Component {
    
 
     render() {
-    const {categories,rec_cat,rec_cat_image} = this.state;
+    const {categories,rec_cat,rec_cat_image,likedSongs} = this.state;
     return (
         <div className="Cat-Container">
+            <div className="cat-row row row-cols-1 row-cols-md-6 g-4">
+            <p className="cat-title">Songs You Have Liked</p>
+            {
+                likedSongs.map((data,i) =>{
+                    // console.log(data);
+                    return <LikedSongs title={data.songTitle} image={data.songImage} artist={data.songArtist} onClick={() => this.togglePlaying(i)}/>
+                })
+            }
+            <a className="cat-title cat-more">See More...</a>
+            </div>
+            
             {/* <Recommended/> */}
             <div className="cat-row row row-cols-1 row-cols-md-6 g-4">
             <p className="cat-title">Popular Categories</p>
@@ -88,7 +141,6 @@ export default class Categories extends Component {
             }
             <a className="cat-title cat-more">See More...</a>
             </div>
-           
 
             {this.state.isPlaying &&
                 <AudioPlayer/>
@@ -98,6 +150,25 @@ export default class Categories extends Component {
   }
 }
 
+class LikedSongs extends Component {
+    render() {
+        const {title,image,artist}=this.props;
+        
+        return (
+            <Link>
+                <div className="col" onClick={this.props.onClick}>
+                    <div class="category card bg-dark text-white">
+                        <img src={image} class="card-img" alt="..."/>
+                        <div class="card-img-overlay">
+                            <h5 class="card-title">{title}</h5>
+                            <h6 class='card-title'>{artist}</h6>
+                        </div>
+                    </div>
+                </div>
+            </Link>
+        )
+      }
+}
 
 class Category extends Component {
   
