@@ -145,12 +145,14 @@ def runContentCosineModel(request,slug):
         Songs=preprocessData(songs)
         songs.to_csv('data.csv',header=True, index=False)
         likedSongs=pd.DataFrame({})
+        # print(docs[slug])
+        print("COSINE SIM MODEL EXECUTING")
         for key,value in docs[slug]['likedSongs'].items():
             songid=value['songId']
             df=getCosineRecommendations(Songs,songid)
             likedSongs=likedSongs.append(df,ignore_index = True)
 
-        print(likedSongs)
+        print(likedSongs[0:12]['name'])
         return HttpResponse(likedSongs['id'].to_json())
 
 def runContentManhattanModel(request,slug):

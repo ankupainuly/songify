@@ -5,6 +5,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from tqdm import tqdm
 from sklearn.cluster import KMeans
 import warnings
+
 warnings.filterwarnings("ignore")
 
 
@@ -66,28 +67,33 @@ class SpotifyRecommender():
 
 def find_songVector(viz_songs,songs,id):
         return viz_songs.loc[songs['id']==id]
+
 def find_recommendations(songs,id):
     
-    print("COSINE SIM MODEL EXECUTING")
     viz_songs=songs.drop(columns=['id', 'name', 'artists'])
-    print("song ID: ")
-    print(id)
     song_vec=find_songVector(viz_songs,songs,id)
+    song_vec=song_vec.iloc[0:1,]
     print(song_vec)
     sim_viz_songs=viz_songs[viz_songs.cat==song_vec.cat.values[0]]
-    print("similar songs are ")
     print(sim_viz_songs.shape)
+    a = pd.DataFrame()
+    indexes = []
+    for i in viz_songs.index:
+        if viz_songs['cat'][i]==song_vec.cat.values[0]:
+            indexes.append(i)
+    a['index'] = indexes
+
     sim_viz_songs.fillna(value = 0,inplace = True)
     sim=cosine_similarity(sim_viz_songs,song_vec)
-    scores=list(enumerate(sim))
-    sorted_scores=sorted(scores,key=lambda x:x[1],reverse=True)  #sorts all the songs in the list in reverse order (decreasing order)
-    sorted_scores=sorted_scores[1:]                               #skips the first index as it is the same song with highest similarity
-    print(len(sorted_scores))
-    # print(scores)
+    print(sim)
+    a['sim'] = sim
+    a = a.sort_values(by = 'sim', ascending=False)
+
     rec_songs=pd.DataFrame()
-    for i in range(0,min(len(sorted_scores),5)):
-        indx=sorted_scores[i][0]
-        rec_songs=rec_songs.append(songs.loc[indx])       #adds all song title according to the scores found
+    for index, row in a[1:6].iterrows():
+        rec_songs=rec_songs.append(songs.loc[row['index']])       #adds all song title according to the scores found
+    
+    # rec_songs.to_csv(id+'.csv',header=True, index=True)
     return rec_songs #returns the songs
 
 
@@ -95,9 +101,8 @@ def getCosineRecommendations(songs,songid):
 
     
     recc=find_recommendations(songs,songid)
-   
-    print(recc)
     return recc
+
 def getManRecommendations(songs,songid):
 
     
