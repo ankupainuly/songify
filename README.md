@@ -1,5 +1,5 @@
 # About "Songify" :
-"Songify" is a web application using which the users can stream songs of there choice or can select from songs recomended by the content based AI recomendation system, recomends songs based on the user's interests.Developed using ReactJs and uses Firebase as database. The recommendation engine is Python based and the backend is handled using Django.
+"Songify" is a web application using which the users can stream songs of their choice or can select from songs recommended by the content based AI recommendation system, recommends songs based on the user's interests.Developed using React Js and uses Firebase as database. The recommendation engine is Python based and the backend is handled using Django.
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
